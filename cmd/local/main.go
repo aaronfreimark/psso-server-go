@@ -26,6 +26,11 @@ func NewRouter() *http.ServeMux {
 	router.HandleFunc(constants.EndpointRegister, handlers.Register())
 	router.HandleFunc(constants.EndpointToken, handlers.Token())
 
+	// new OIDC endpoints
+	router.HandleFunc("/.well-known/openid-configuration", handlers.OIDCDiscovery())
+	router.HandleFunc("/auth", handlers.OIDCAuth())
+	router.HandleFunc("/oidc/token", handlers.OIDCToken())
+
 	return router
 }
 

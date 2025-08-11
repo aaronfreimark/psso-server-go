@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/twocanoes/psso-sdk-go/psso"
 	"github.com/twocanoes/psso-server/pkg/constants"
@@ -33,11 +34,33 @@ type Nonce struct {
 	User     string
 }
 
+type UserSession struct {
+	SessionID    string    `json:"session_id"`
+	Username     string    `json:"username"`
+	DisplayName  string    `json:"display_name"`
+	Email        string    `json:"email"`
+	Groups       []string  `json:"groups"`
+	DeviceID     string    `json:"device_id"`
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	AuthMethod   string    `json:"auth_method"` // "psso" or "oidc"
+}
+
+type AuthCode struct {
+	Code      string    `json:"code"`
+	SessionID string    `json:"session_id"`
+	ClientID  string    `json:"client_id"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
 func Save(object interface{}, path string) error {
 	parentFolder := filepath.Dir(path)
 
 	if _, err := os.Stat(parentFolder); errors.Is(err, os.ErrNotExist) {
-		os.Mkdir(parentFolder, 0750)
+		err = os.MkdirAll(parentFolder, 0750)  // Use MkdirAll instead of Mkdir
+		if err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", parentFolder, err)
+		}
 	}
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) == false {
 		fmt.Println("Removing file")
@@ -142,4 +165,56 @@ func GetJWKS() (*psso.JWKS, error) {
 		return jwks, nil
 
 	}
+}
+
+func SaveSession(session *UserSession) error {
+	return Save(session, filepath.Join(constants.SessionPath, session.SessionID+".json"))
+}
+
+func GetSession(sessionID string) (*UserSession, error) {
+	data, err := ReadFile(filepath.Join(constants.SessionPath, sessionID+".json"))
+	if err != nil {
+		return nil, err
+	}
+	
+	var session UserSession
+	err = json.Unmarshal(data, &session)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Check if session is expired
+	if time.Now().After(session.ExpiresAt) {
+		return nil, fmt.Errorf("session expired")
+	}
+	
+	return &session, nil
+}
+
+func SaveAuthCode(authCode *AuthCode) error {
+	return Save(authCode, filepath.Join(constants.AuthCodePath, authCode.Code+".json"))
+}
+
+func GetAuthCode(code string) (*AuthCode, error) {
+	data, err := ReadFile(filepath.Join(constants.AuthCodePath, code+".json"))
+	if err != nil {
+		return nil, err
+	}
+	
+	var authCode AuthCode
+	err = json.Unmarshal(data, &authCode)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Check if code is expired
+	if time.Now().After(authCode.ExpiresAt) {
+		return nil, fmt.Errorf("auth code expired")
+	}
+	
+	return &authCode, nil
+}
+
+func DeleteAuthCode(code string) error {
+	return os.Remove(filepath.Join(constants.AuthCodePath, code+".json"))
 }

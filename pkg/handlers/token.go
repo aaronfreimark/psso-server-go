@@ -170,48 +170,39 @@ func Token() http.HandlerFunc {
 				fmt.Println(err)
 				return
 			}
-			//get the username and password sent in thte request
-			claimUsername := userClaims.Username
-			claimPassword := userClaims.Password
+			
+			// Authenticate user using shared auth function
+			userInfo, err := AuthenticateUser(userClaims.Username, userClaims.Password)
+			if err != nil {
+				fmt.Println("Authentication failed:", err)
+				http.Error(w, "Authentication failed", http.StatusUnauthorized)
+				return
+			}
+			
+			// Create shared session
+			session, err := CreateUserSession(userInfo, deviceID, "psso")
+			if err != nil {
+				fmt.Println("Failed to create session:", err)
+				http.Error(w, "Server error", http.StatusInternalServerError)
+				return
+			}
 
-			fmt.Println("UserClaims:")
-			fmt.Println(userClaims)
-
-			// compare with what is passed in
-			if claimUsername == "jappleseed@twocanoes.com" {
-
-				jweString, err = psso.CreateIDTokenResponse(constants.Issuer, *userClaims, "johnny", "Johnny Appleseed", []string{"admin", "net-admin", "software-install"}, "jappleseed@twocanoes.com", "jappleseed@twocanoes.com", "refresh", servicePrivateKey, jwks.KID, deviceEncryptionPublicKey.(*ecdsa.PublicKey))
-				if err != nil {
-					fmt.Println("invalid jwe")
-					return
-				}
-
-			} else if claimUsername == "liz@twocanoes.com" && claimPassword == "twocanoes" {
-
-				jweString, err = psso.CreateIDTokenResponse(constants.Issuer, *userClaims, "Liz", "Liz Appleseed", []string{"software-install", "psso-standard-users"}, "liz@twocanoes.com", "liz@twocanoes.com", "refresh", servicePrivateKey, jwks.KID, deviceEncryptionPublicKey.(*ecdsa.PublicKey))
-				if err != nil {
-					fmt.Println("invalid jwe")
-					return
-				}
-
-			} else if claimUsername == "nate@twocanoes.com" && claimPassword == "twocanoes" {
-
-				jweString, err = psso.CreateIDTokenResponse(constants.Issuer, *userClaims, "Nate", "Nate Appleseed", []string{"software-install", "psso-standard-users"}, "nate@twocanoes.com", "nate@twocanoes.com", "refresh", servicePrivateKey, jwks.KID, deviceEncryptionPublicKey.(*ecdsa.PublicKey))
-				if err != nil {
-					fmt.Println("invalid jwe")
-					return
-				}
-
-			} else if claimUsername == "aaron.freimark" && claimPassword == "ArloPuppy0" {
-
-				jweString, err = psso.CreateIDTokenResponse(constants.Issuer, *userClaims, "Aaron", "Aaron Freimark", []string{"software-install", "psso-standard-users"}, "aaron.freimark@macdemos.com", "aaron.freimark@macdemos.com", "refresh", servicePrivateKey, jwks.KID, deviceEncryptionPublicKey.(*ecdsa.PublicKey))
-				if err != nil {
-					fmt.Println("invalid jwe")
-					return
-				}
-
-			} else {
-				fmt.Println("invalid username or password")
+			// Create PSSO response with session reference
+			jweString, err = psso.CreateIDTokenResponse(
+				constants.Issuer, 
+				*userClaims, 
+				userInfo.DisplayName, 
+				userInfo.DisplayName,
+				userInfo.Groups, 
+				userInfo.Email, 
+				userInfo.Username, 
+				session.SessionID, // Pass session ID as refresh token
+				servicePrivateKey, 
+				jwks.KID, 
+				deviceEncryptionPublicKey.(*ecdsa.PublicKey),
+			)
+			if err != nil {
+				fmt.Println("invalid jwe")
 				return
 			}
 

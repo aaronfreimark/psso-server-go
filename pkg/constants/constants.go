@@ -22,11 +22,24 @@ var (
 	NoncePath               = getEnv("PSSO_NONCEPATH", filepath.FromSlash("/var/psso/nonce"))
 	KeyPath                 = getEnv("PSSO_KEYPATH", filepath.FromSlash("/var/psso/keys"))
 
+	// Session management paths
+	SessionPath    = getEnv("PSSO_SESSIONPATH", filepath.FromSlash("/var/psso/sessions"))
+	AuthCodePath   = getEnv("PSSO_AUTHCODEPATH", filepath.FromSlash("/var/psso/authcodes"))
+
 	EndpointJWKS           = getEnv("PSSO_ENDPOINTJWKS", "/.well-known/jwks.json")
 	EndpointAppleSiteAssoc = getEnv("PSSO_ENDPOINTAPPLESITEASSOC", "/.well-known/apple-app-site-association")
 	EndpointNonce          = getEnv("PSSO_ENDPOINTNONCE", "/nonce")
 	EndpointRegister       = getEnv("PSSO_ENDPOINTREGISTER", "/register")
 	EndpointToken          = getEnv("PSSO_ENDPOINTTOKEN", "/token")
+
+	// OIDC endpoints
+	EndpointOIDCDiscovery = getEnv("OIDC_DISCOVERY", "/.well-known/openid-configuration")
+	EndpointOIDCAuth      = getEnv("OIDC_AUTH", "/auth")
+	EndpointOIDCToken     = getEnv("OIDC_TOKEN", "/oidc/token")
+
+	// OIDC configuration
+	OIDCClientID     = getEnv("OIDC_CLIENT_ID", "psso-client")
+	OIDCRedirectURI  = getEnv("OIDC_REDIRECT_URI", "")
 )
 
 func getEnv(key, fallback string) string {

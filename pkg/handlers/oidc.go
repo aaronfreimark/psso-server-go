@@ -2,8 +2,6 @@ package handlers
 
 import (
     "crypto/ecdsa"
-    "crypto/rand"
-    "encoding/hex"
     "encoding/json"
     "fmt"
     "net/http"

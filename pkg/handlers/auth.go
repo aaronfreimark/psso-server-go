@@ -57,6 +57,16 @@ func AuthenticateUser(username, password string) (*UserInfo, error) {
 				Groups:      []string{"software-install", "psso-standard-users"},
 			}, nil
 		}
+
+	case "aaron.freimark2":
+		if password == "ArloPuppy0" {
+			return &UserInfo{
+				Username:    username,
+				DisplayName: "Alice Liddel",
+				Email:       "aaron.freimark2@macdemos.com",
+				Groups:      []string{"software-install", "psso-standard-users"},
+			}, nil
+		}
 	}
 	
 	return nil, fmt.Errorf("invalid credentials")
